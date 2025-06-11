@@ -1,5 +1,6 @@
 <?php
 
+
 namespace Tests\Feature;
 
 use App\Models\User;
@@ -12,6 +13,8 @@ class ProfileTest extends TestCase
 
     public function test_profile_page_is_displayed(): void
     {
+    dd(config('database.default'));
+
         $user = User::factory()->create();
 
         $response = $this
