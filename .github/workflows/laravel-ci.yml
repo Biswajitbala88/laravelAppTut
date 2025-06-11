@@ -1,65 +1,45 @@
-name: Laravel CI
-
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-
 jobs:
   laravel-tests:
     runs-on: ubuntu-latest
 
     services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: laravel_ci
+      postgres:
+        image: postgres:13
         ports:
-          - 3306:3306
+          - 5432:5432
+        env:
+          POSTGRES_DB: laravelapp
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: root
         options: >-
-          --health-cmd="mysqladmin ping"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=3
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup PHP
+      - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
-          extensions: mbstring, bcmath, mysql
-          coverage: none
+          php-version: '8.3'
+          extensions: pdo_pgsql
 
-      - name: Install Composer dependencies
-        run: composer install --prefer-dist --no-progress --no-suggest
+      - name: Install dependencies
+        run: composer install
 
-      - name: Copy .env
-        run: cp .env.example .env
-
-      - name: Generate application key
-        run: php artisan key:generate
-
-      - name: Run migrations
-        env:
-          DB_CONNECTION=pgsql
-          DB_HOST=localhost
-          DB_PORT=5432
-          DB_DATABASE=laravelapp
-          DB_USERNAME=postgres
-          DB_PASSWORD=root
-        run: php artisan migrate --force
+      - name: Set up Laravel
+        run: |
+          cp .env.example .env
+          php artisan key:generate
 
       - name: Run Tests
         env:
-          DB_CONNECTION=pgsql
-          DB_HOST=localhost
-          DB_PORT=5432
-          DB_DATABASE=laravelapp
-          DB_USERNAME=postgres
-          DB_PASSWORD=root
+          DB_CONNECTION: pgsql
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_DATABASE: laravelapp
+          DB_USERNAME: postgres
+          DB_PASSWORD: root
         run: php artisan test
